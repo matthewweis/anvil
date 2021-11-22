@@ -29,7 +29,7 @@ object Context {
 
   @sig trait LocalContext {
 
-    def runProc[T](path: Os.Path, proc: ISZ[String]): Os.Proc.Result = {
+    def runProc(path: Os.Path, proc: ISZ[String]): Os.Proc.Result = {
       val prefix: ISZ[String] = if (Os.kind == Os.Kind.Win) ISZ("cmd", "/c") else ISZ[String]()
       return Os.proc(prefix ++ proc).at(path).console.runCheck()
     }
@@ -107,14 +107,14 @@ object Context {
     def hlsDriverImplDirectory(context: CompileContext): Os.Path
     // consider adding helper method "isValidNamingConvention" to check user input against Xilinx tools
 
-    def runProc[T](proc: ISZ[String]): Os.Proc.Result = {
-      if (Os.kind == Os.Kind.Win) {
-        val windowsPrefix: ISZ[String] = ISZ("cmd", "/c")
-        Os.proc(windowsPrefix ++ proc).console.run()
-      } else {
-        Os.proc(proc).console.run()
-      }
-    }
+//    def runProc(proc: ISZ[String]): Os.Proc.Result = {
+//      if (Os.kind == Os.Kind.Win) {
+//        val windowsPrefix: ISZ[String] = ISZ("cmd", "/c")
+//        Os.proc(windowsPrefix ++ proc).console.run()
+//      } else {
+//        Os.proc(proc).console.run()
+//      }
+//    }
   }
 
   /**
@@ -133,7 +133,7 @@ object Context {
     }
 
     override def versionedDriverName(context: CompileContext): String = {
-      return s"${driverName(context)}_v1_0"
+      return st"${driverName(context)}_v1_0".render
     }
 
     override def hlsDriverImplDirectory(context: CompileContext): Os.Path = {
@@ -184,7 +184,7 @@ object Context {
       return localSandboxProc(ISZ("vagrant", "up", "--no-provision"))
     }
 
-    def ssh[T](proc: ISZ[String]): Os.Proc.Result = {
+    def ssh(proc: ISZ[String]): Os.Proc.Result = {
       return localSandboxProc(ISZ("vagrant", "ssh", "-c", st"'${(proc, " ")}'".render))
     }
 
@@ -302,14 +302,14 @@ object Context {
       // default extremely rough estimates. Should be part of config
       val gb: Z = toolsBOM match {
         // (sireum? petalinux? xilinx?) <---- tuple order
-        case Tuple3(F, F, F) => 64  // CASE #1: environment + dependencies, but no tools preinstalled. sUse little and let users adjust if needed.
-        case Tuple3(F, F, T) => 128 // CASE #2: big with huge installer
-        case Tuple3(F, T, F) => 128 // CASE #3: smaller with potentially huge sstate cache
-        case Tuple3(F, T, T) => 256 // CASE #4: (too small?) big installer + sstate + apps. Can probably lower if run then delete installer before petalinux install.
-        case Tuple3(T, F, F) => 64  // CASE #5: sireum tools don't require too much memory, but hint that development may occur on the box.
-        case Tuple3(T, F, T) => 128 // CASE #6:
-        case Tuple3(T, T, F) => 128 // CASE #7:
-        case Tuple3(T, T, T) => 256 // CASE #8: (too small?)
+        case (F, F, F) => 64  // CASE #1: environment + dependencies, but no tools preinstalled. sUse little and let users adjust if needed.
+        case (F, F, T) => 128 // CASE #2: big with huge installer
+        case (F, T, F) => 128 // CASE #3: smaller with potentially huge sstate cache
+        case (F, T, T) => 256 // CASE #4: (too small?) big installer + sstate + apps. Can probably lower if run then delete installer before petalinux install.
+        case (T, F, F) => 64  // CASE #5: sireum tools don't require too much memory, but hint that development may occur on the box.
+        case (T, F, T) => 128 // CASE #6:
+        case (T, T, F) => 128 // CASE #7:
+        case (T, T, T) => 256 // CASE #8: (too small?)
       }
       return st"${gb}GB".render
     }

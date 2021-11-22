@@ -165,9 +165,9 @@ object AnvilSandbox {
           }
 
           return st"""
-                     |${echo(s"Provisioning started, this may take a few hours.")}
+                     |${echo(string"Provisioning started, this may take a few hours.")}
                      |${(for (script <- scriptOrder) yield execute(script), "\n")}
-                     |${echo(s"Provisioning complete, please reboot the machine now.")}
+                     |${echo(string"Provisioning complete, please reboot the machine now.")}
                      |"""
         }
 
@@ -183,6 +183,11 @@ object AnvilSandbox {
                    |  ${(ISZ(vm(), disk(), shell(), virtualbox(), sync(), scripts()), "\n")}
                    |end
                    |"""
+      }
+
+      val optToSeq: (Option[Os.Path] => ISZ[Os.Path] @pure) = (o: Option[Os.Path]) => o match {
+        case Some(value) => ISZ(value)
+        case None() => ISZ[Os.Path]()
       }
 
       val text = st"""
@@ -224,7 +229,7 @@ object AnvilSandbox {
       /*
        * Installs Petalinux.
        */
-      def installPetalinuxScript(installerFileName: String, workspace: InstallerWorkspace): ST = {
+      def installPetalinuxScript(installerFileName: String): ST = {
         val installer: ST = st"/${context.username}/${workspace.root.relativize(workspace.downloads).value}/$installerFileName"
         val remoteInstallerDir: ST = st"/home/${context.username}/Downloads"
         val remoteTargetDir: ST = st"/opt/pkg/petalinux"
@@ -257,7 +262,7 @@ object AnvilSandbox {
       /*
        * Installs Vivado and Vivado HLS.
        */
-      def installVivadoScript(zippedInstallerFileName: String, workspace: InstallerWorkspace): ST = {
+      def installVivadoScript(zippedInstallerFileName: String): ST = {
         val sharedZipped: ST = st"/${context.username}/${workspace.root.relativize(workspace.downloads).value}/$zippedInstallerFileName"
         val unzippedInstallerFileName: String = removeExtension(zippedInstallerFileName, "tar.gz")
         val remoteInstallerDir: ST = st"/home/${context.username}/Downloads"
@@ -342,16 +347,16 @@ object AnvilSandbox {
       writeOverSafe(workspace.fixDashScript, fixDashScript().render)
       writeOverSafe(workspace.installDependenciesScript, installDependenciesScript().render)
 
-      context.petalinuxInstallerPath.foreach(p => {
+      context.petalinuxInstallerPath.foreach((p: Os.Path) => {
         val petalinuxInstallerFilename: String = p.name
         p.copyOverTo(workspace.downloads / petalinuxInstallerFilename)
-        writeOverSafe(workspace.installPetalinuxScript, installPetalinuxScript(petalinuxInstallerFilename, workspace).render)
+        writeOverSafe(workspace.installPetalinuxScript, installPetalinuxScript(petalinuxInstallerFilename).render)
       })
 
-      context.xilinxUnifiedPath.foreach(p => {
+      context.xilinxUnifiedPath.foreach((p: Os.Path) => {
         val xilinxUnifiedTarballFilename: String = p.name
         p.copyOverTo(workspace.downloads / xilinxUnifiedTarballFilename)
-        writeOverSafe(workspace.installVivadoScript, installVivadoScript(xilinxUnifiedTarballFilename, workspace).render)
+        writeOverSafe(workspace.installVivadoScript, installVivadoScript(xilinxUnifiedTarballFilename).render)
       })
 
       if (context.installSireum) {
@@ -379,15 +384,8 @@ object AnvilSandbox {
     return file
   }
 
-  def optToSeq[T](option: Option[T]): ISZ[T] = {
-    option match {
-      case Some(value) => ISZ(value)
-      case None() => ISZ()
-    }
-  }
-
   def removeExtension(s: String, ext: String): String = {
-    val extSize = StringOps(s".$ext").size
+    val extSize = StringOps(st".$ext".render).size
     return StringOps(s).substring(z"0", s.size - extSize);
   }
 
