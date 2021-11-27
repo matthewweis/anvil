@@ -192,13 +192,25 @@ object Context {
       val tool: ISZ[String] = ISZ("scp")
       val fileFlag: ISZ[String] = if (localPath.isDir) ISZ("-r") else ISZ()
       val portFlag: ISZ[String] = ISZ("-P", port)
-      val remote: String = st"$username@$hostname:${(for (file <- remotePath) yield st"$file", "/")}".render // should be /home/vagrant/project
+      val remotePathST: ST = pathSeqToST(remotePath)
+      val remote: String = st"$username@$hostname:$remotePathST".render // should be /home/vagrant/project
       val local: String = localPath.string
       val files: ISZ[String] = dir match {
         case ScpDirection.LocalToSandbox => ISZ(local, remote)
         case ScpDirection.SandboxToLocal => ISZ(remote, local)
       }
       return localSandboxProc(tool ++ fileFlag ++ portFlag ++ files)
+    }
+
+    def upload(localPath: Os.Path, remotePath: ISZ[String]): Os.Proc.Result = {
+      val ws: String = workspace.local.string
+      val source: String = localPath.string
+      val destination: ST = pathSeqToST(remotePath)
+      return localSandboxProc(ISZ(st"cd $ws && vagrant upload $source $destination".render))
+    }
+
+    def pathSeqToST(path: ISZ[String]): ST = {
+      return st"${(for (file <- path) yield st"$file", "/")}"
     }
 
     def clearProjectDir(remotePath: ISZ[String]): Os.Proc.Result = {
