@@ -37,7 +37,7 @@ trait Module extends JvmPublishOnly {
   final override def subUrl: String = "anvil"
 
   final override def developers = Seq(
-    Developer("MatthewWeisCaps ", "Matthew Weis", "https://github.com/MatthewWeisCaps ")
+    Developer("matthewweis ", "Matthew Weis", "https://github.com/matthewweis ")
   )
 
   final override def crossDeps =
